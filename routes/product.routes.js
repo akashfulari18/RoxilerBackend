@@ -17,7 +17,7 @@ productRoute.get('/', async (req, res) => {
     }
 
     const query = {
-        dateOfSale: { $regex: `.*-${month}-.*` }, 
+        dateOfSale: { $regex: `.*-${month}-.*` },
     };
 
     if (!isNaN(search)) {
@@ -26,8 +26,8 @@ productRoute.get('/', async (req, res) => {
         ];
     } else {
         query.$or = [
-            { 'title': { $regex: search, $options: 'i' } }, 
-            { 'description': { $regex: search, $options: 'i' } }, 
+            { 'title': { $regex: search, $options: 'i' } },
+            { 'description': { $regex: search, $options: 'i' } },
         ];
     }
 
@@ -51,13 +51,27 @@ productRoute.get("/statastic", async (req, res) => {
 
     let { month } = req.query
 
-    if (month < 10) {
-        month = `0${month}`
-    }
-
-
+    
     try {
+        if (month < 10) {
+            month = `0${month}`
+        }
+    
+        const query = {
+            dateOfSale: {
+                $regex: `.*-${month}-.*`,
+            }
+        }
 
+        // number of sold item 
+        const numOfSold = await ProductModel.find({ ...query, sold: true })
+        .count()
+        
+        // number of unsold item 
+        const numNotSold = await ProductModel.find({ ...query, sold: false })
+            .count()
+            
+            // to get the total price of sold item per month
         const resultSold = await ProductModel.aggregate([
             {
                 $match: {
@@ -77,6 +91,7 @@ productRoute.get("/statastic", async (req, res) => {
             },
         ])
 
+        // to get the total price of not sold item per month
         const resultNotSold = await ProductModel.aggregate([
             {
                 $match: {
@@ -95,7 +110,9 @@ productRoute.get("/statastic", async (req, res) => {
                 },
             },
         ])
-        res.status(200).send({ totalSaleAmtOfMth: (+resultSold[0].total.toFixed(2)) + (+resultNotSold[0].total.toFixed(2)), totalSoldPerMonth: +resultSold[0].total.toFixed(2), totalNotSoldPerMonth: +resultNotSold[0].total.toFixed(2) })
+
+        // console.log(resultSold)
+        res.status(200).send({ totalSaleAmtOfMth: (+resultSold[0].total.toFixed(2)) + (+resultNotSold[0].total.toFixed(2)), totalSoldPerMonth: numOfSold, totalNotSoldPerMonth: numNotSold })
 
     } catch (err) {
         res.status(400).send({ err: err.message })
@@ -108,14 +125,15 @@ productRoute.get("/chart", async (req, res) => {
 
     let { month } = req.query
 
-    if (month < 10) {
-        month = `0${month}`
-    }
-
-    const query = {
-        dateOfSale: { $regex: `.*-${month}-.*` }, // Matches any year-month combination
-    };
     try {
+
+        if (month < 10) {
+            month = `0${month}`
+        }
+    
+        const query = {
+            dateOfSale: { $regex: `.*-${month}-.*` }, // Matches any year-month combination
+        };
 
         const result = await ProductModel.aggregate([
             {
@@ -192,32 +210,34 @@ productRoute.get('/pie', async (req, res) => {
 
     let { month } = req.query
 
-    if (month < 10) {
-        month = `0${month}`
-    }
-
-    const query = {
-        dateOfSale: { $regex: `.*-${month}-.*` }, 
-    };
+    
     try {
 
+        if (month < 10) {
+            month = `0${month}`
+        }
+    
+        const query = {
+            dateOfSale: { $regex: `.*-${month}-.*` },
+        };
+
         const result = await ProductModel.aggregate([
-          {
-            $match: query,
-          },
-          {
-            $group: {
-              _id: '$category',
-              count: { $sum: 1 },
+            {
+                $match: query,
             },
-          },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 },
+                },
+            },
         ])
 
         const chartData = result.reduce((data, { _id, count }) => {
             data[_id] = count;
             return data;
-          }, {});
-      
+        }, {});
+
         res.status(200).send({ total: chartData })
     } catch (err) {
         res.status(400).send({ err: err.message })
@@ -227,24 +247,25 @@ productRoute.get('/pie', async (req, res) => {
 
 })
 
-productRoute.get("/combinedResponse",async(req,res)=>{
+productRoute.get("/combinedResponse", async (req, res) => {
     let { month } = req.query
-    
+
     try {
+        let respStat = await axios.get(`http://localhost:8002/product/statastic?month=${month}`)
 
-   
+        let respBar = await axios.get(`http://localhost:8002/product/chart?month=${month}`)
 
-   
-let respStat = await axios.get(`http://localhost:8002/product/statastic?month=${month}`)
-       console.log(respStat?.data)
-let respBar = await axios.get(`http://localhost:8002/product/chart?month=${month}`)
-       console.log(respBar?.data)
-let respPie = await axios.get(`http://localhost:8002/product/Pie?month=${month}`)
-       console.log(respPie?.data)
+        let respPie = await axios.get(`http://localhost:8002/product/Pie?month=${month}`)
 
-        res.status(200).send( )
-
+        const combinedData = {
+            statastic: respStat.data,
+            bar: respBar.data,
+            pie: respPie.data,
+        };
         
+        res.status(200).send(combinedData)
+
+
     } catch (err) {
         res.status(400).send({ err: err.message })
 
