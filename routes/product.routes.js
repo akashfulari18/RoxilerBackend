@@ -16,11 +16,13 @@ productRoute.get('/', async (req, res) => {
         month = `0${month}`
     }
 
-    const query = {
+    let query = {
         dateOfSale: { $regex: `.*-${month}-.*` },
     };
 
-    if (!isNaN(search)) {
+if(search==""){
+    query=query
+}else if (!isNaN(search)) {
         query.$or = [
             { 'price': parseFloat(search) }
         ];
