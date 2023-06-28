@@ -251,11 +251,11 @@ productRoute.get("/combinedResponse", async (req, res) => {
     let { month } = req.query
 
     try {
-        let respStat = await axios.get(`http://localhost:8002/product/statastic?month=${month}`)
+        let respStat = await axios.get(`https://roxilerbackend.onrender.com/product/statastic?month=${month}`)
 
-        let respBar = await axios.get(`http://localhost:8002/product/chart?month=${month}`)
+        let respBar = await axios.get(`https://roxilerbackend.onrender.com/product/chart?month=${month}`)
 
-        let respPie = await axios.get(`http://localhost:8002/product/Pie?month=${month}`)
+        let respPie = await axios.get(`https://roxilerbackend.onrender.com/product/Pie?month=${month}`)
 
         const combinedData = {
             statastic: respStat.data,
