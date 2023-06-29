@@ -37,7 +37,7 @@ if(search==""){
         const skip = (page - 1) * per_page;
 
 
-        const result = await ProductModel.find(query).find(query)
+        const result = await ProductModel.find(query)
             .skip(skip)
             .limit(per_page)
 
