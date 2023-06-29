@@ -35,14 +35,15 @@ if(search==""){
 
     try {
         const skip = (page - 1) * per_page;
-
+       
+        const record = await ProductModel.find(query)
 
         const result = await ProductModel.find(query)
             .skip(skip)
             .limit(per_page)
 
         // console.log(result)
-        res.status(200).send({ data: result, totalRecords: result?.length })
+        res.status(200).send({ data: result, totalRecords: record?.length })
     } catch (err) {
         res.status(400).send({ err: err.message })
     }
